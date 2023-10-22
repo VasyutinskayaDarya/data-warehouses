@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public."HubClient"
     "ClientHashKey" text COLLATE pg_catalog."default" NOT NULL,
     "LoadDate" timestamp without time zone NOT NULL,
     "RecordSource" text COLLATE pg_catalog."default" NOT NULL,
-    "ClientId" uuid NOT NULL,
+    "ClientNumber" text NOT NULL,
     CONSTRAINT "HubClient_pkey" PRIMARY KEY ("ClientHashKey")
 );
 
@@ -23,91 +23,158 @@ CREATE TABLE IF NOT EXISTS public."HubInventory"
 
 CREATE TABLE IF NOT EXISTS public."SatClient"
 (
-    "Id" uuid NOT NULL,
+    "ClientHashKey" text NOT NULL,
     "Phone" text COLLATE pg_catalog."default" NOT NULL,
     "FirstName" text COLLATE pg_catalog."default" NOT NULL,
     "Surname" text COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT "Client Id" PRIMARY KEY ("Id")
+    CONSTRAINT "Client Id" PRIMARY KEY ("ClientHashKey")
 );
 
 CREATE TABLE IF NOT EXISTS public."SatInventory"
 (
-    "Id" uuid NOT NULL,
+    "InventoryHashKey" text NOT NULL,
     "InventoryNumber" text COLLATE pg_catalog."default" NOT NULL,
     "IsAvailable" boolean,
-    "InventoryModel" uuid NOT NULL,
-    CONSTRAINT "Inventory Id" PRIMARY KEY ("Id")
+    "InventoryModel" uuid NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS public."SatInventoryModel"
 (
-    "Id" uuid NOT NULL,
+    "InventoryModelHashKey" text NOT NULL,
     "FullName" text COLLATE pg_catalog."default" NOT NULL,
-    "InventoryType" uuid NOT NULL,
-    CONSTRAINT "Inventory model Id" PRIMARY KEY ("Id")
-);
-
-CREATE TABLE IF NOT EXISTS public."SatInventoryType"
-(
-    "Id" uuid NOT NULL,
-    "Name" text COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT "Inventory type Id" PRIMARY KEY ("Id")
+    CONSTRAINT "Inventory model Id" PRIMARY KEY ("InventoryModelHashKey")
 );
 
 CREATE TABLE IF NOT EXISTS public."SatOperator"
 (
-    "Id" uuid NOT NULL,
+    "OperatorHashKey" text NOT NULL,
     "Phone" text COLLATE pg_catalog."default" NOT NULL,
     "PersonnelNumber" text COLLATE pg_catalog."default" NOT NULL,
     "FirstName" text COLLATE pg_catalog."default" NOT NULL,
     "Surname" text COLLATE pg_catalog."default" NOT NULL,
     "Patronymic" text COLLATE pg_catalog."default",
-    CONSTRAINT "Operator Id" PRIMARY KEY ("Id")
+    CONSTRAINT "Operator Id" PRIMARY KEY ("OperatorHashKey")
+);
+
+CREATE TABLE IF NOT EXISTS public."LinkOrder"
+(
+    "OrderHashKey" text NOT NULL,
+    "LoadDate" timestamp without time zone NOT NULL,
+    "RecordSource" text NOT NULL,
+    "Operator" text NOT NULL,
+    "Client" text NOT NULL,
+    "Inventory" text NOT NULL,
+    CONSTRAINT "Order Id" PRIMARY KEY ("OrderHashKey")
+);
+
+CREATE TABLE IF NOT EXISTS public."HubInventoryModel"
+(
+    "InventoryModelHashKey" text NOT NULL,
+    "LoadDate" timestamp without time zone NOT NULL,
+    "RecordSource" text NOT NULL,
+    PRIMARY KEY ("InventoryModelHashKey")
+);
+
+CREATE TABLE IF NOT EXISTS public."HubOperator"
+(
+    "OperatorHashKey" text NOT NULL,
+    "LoadDate" timestamp without time zone NOT NULL,
+    "RecordSource" text NOT NULL,
+    PRIMARY KEY ("OperatorHashKey")
 );
 
 CREATE TABLE IF NOT EXISTS public."SatOrder"
 (
-    "Id" uuid NOT NULL,
-    "Inventory" uuid NOT NULL,
-    "Client" uuid NOT NULL,
-    "Operator" uuid NOT NULL,
+    "OrderHashKey" text NOT NULL,
+    "LoadDate" timestamp without time zone NOT NULL,
+    "RecordSource" text NOT NULL,
     "OrderDate" timestamp without time zone NOT NULL,
-    "Comment" text COLLATE pg_catalog."default",
-    CONSTRAINT "Order Id" PRIMARY KEY ("Id")
+    "Comment" text NOT NULL,
+    PRIMARY KEY ("OrderHashKey")
 );
 
-ALTER TABLE IF EXISTS public."SatInventory"
-    ADD CONSTRAINT "Model of inventory" FOREIGN KEY ("InventoryModel")
-    REFERENCES public."SatInventoryModel" ("Id") MATCH SIMPLE
+CREATE TABLE IF NOT EXISTS public."LinkInventoryModel"
+(
+    "LinkInventoryModelHashKey" text NOT NULL,
+    "InventoryModelHashKey" text NOT NULL,
+    "InventoryHashKey" text NOT NULL,
+    PRIMARY KEY ("LinkInventoryModelHashKey")
+);
+
+ALTER TABLE IF EXISTS public."SatClient"
+    ADD FOREIGN KEY ("ClientHashKey")
+    REFERENCES public."HubClient" ("ClientHashKey") MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
+    ON DELETE NO ACTION
+    NOT VALID;
+
+
+ALTER TABLE IF EXISTS public."SatInventory"
+    ADD FOREIGN KEY ("InventoryHashKey")
+    REFERENCES public."HubInventory" ("InventoryHashKey") MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
 
 
 ALTER TABLE IF EXISTS public."SatInventoryModel"
-    ADD CONSTRAINT "Type of inventory model" FOREIGN KEY ("InventoryType")
-    REFERENCES public."SatInventoryType" ("Id") MATCH SIMPLE
+    ADD FOREIGN KEY ("InventoryModelHashKey")
+    REFERENCES public."HubInventoryModel" ("InventoryModelHashKey") MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
+    ON DELETE NO ACTION
+    NOT VALID;
 
 
-ALTER TABLE IF EXISTS public."SatOrder"
+ALTER TABLE IF EXISTS public."SatOperator"
+    ADD FOREIGN KEY ("OperatorHashKey")
+    REFERENCES public."HubOperator" ("OperatorHashKey") MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+
+ALTER TABLE IF EXISTS public."LinkOrder"
     ADD CONSTRAINT "Order operator" FOREIGN KEY ("Operator")
-    REFERENCES public."SatOperator" ("Id") MATCH SIMPLE
+    REFERENCES public."HubOperator" ("OperatorHashKey") MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
 
 
-ALTER TABLE IF EXISTS public."SatOrder"
+ALTER TABLE IF EXISTS public."LinkOrder"
     ADD CONSTRAINT "Ordered by" FOREIGN KEY ("Client")
-    REFERENCES public."SatClient" ("Id") MATCH SIMPLE
+    REFERENCES public."HubClient" ("ClientHashKey") MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public."LinkOrder"
+    ADD CONSTRAINT "Subject of order" FOREIGN KEY ("Inventory")
+    REFERENCES public."HubInventory" ("InventoryHashKey") MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
 
 
 ALTER TABLE IF EXISTS public."SatOrder"
-    ADD CONSTRAINT "Subject of order" FOREIGN KEY ("Inventory")
-    REFERENCES public."SatInventory" ("Id") MATCH SIMPLE
+    ADD FOREIGN KEY ("OrderHashKey")
+    REFERENCES public."LinkOrder" ("OrderHashKey") MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
+    ON DELETE NO ACTION
+    NOT VALID;
+
+
+ALTER TABLE IF EXISTS public."LinkInventoryModel"
+    ADD FOREIGN KEY ("InventoryModelHashKey")
+    REFERENCES public."HubInventoryModel" ("InventoryModelHashKey") MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+
+ALTER TABLE IF EXISTS public."LinkInventoryModel"
+    ADD FOREIGN KEY ("InventoryHashKey")
+    REFERENCES public."HubInventory" ("InventoryHashKey") MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
 
 END;
