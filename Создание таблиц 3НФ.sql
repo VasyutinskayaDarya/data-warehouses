@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public."InventoryModel"
 (
     "Id" uuid NOT NULL,
     "FullName" text COLLATE pg_catalog."default" NOT NULL,
+    "InventoryType" uuid NOT NULL,
     CONSTRAINT "Inventory model Id" PRIMARY KEY ("Id")
 );
 
